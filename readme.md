@@ -102,7 +102,7 @@ On Windows, once configuration is stable and SFTP connections work, consider ins
         
 ## Running In Background In Linux
 
-On Linux, once configuration is stable and SFTP connections work, consider installing `gulp watch` as a service, so that you don't have to start it in console window:
+On Linux, once configuration is stable and SFTP connections work, consider running `gulp watch` in background, so that you don't have to start it in console window:
                 
 1. Install [Supervisor](http://supervisord.org/). On Ubuntu run in shell with `root` user:
 
