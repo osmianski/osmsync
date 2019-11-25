@@ -3,7 +3,8 @@ const fs = require('fs');
 const through = require('through2');
 const { Client } = require('ssh2');
 
-function Sftp(mapping) {
+function Sftp(name, mapping) {
+    this.name = name;
     this.mapping = mapping;
 }
 
@@ -105,7 +106,7 @@ Sftp.prototype.upload = function () {
 
                 self.sftp.fastPut(file.path, remotePath, function (err) {
                     if (err) throw err;
-                    console.log(`${filePath} uploaded`);
+                    console.log(`${self.name}: ${filePath} uploaded`);
                     cb();
                 });
             });
@@ -133,7 +134,7 @@ Sftp.prototype.uploadMultiple = function(list, cb) {
 
             self.sftp.fastPut(localPath, remotePath, function (err) {
                 if (err) throw err;
-                console.log(`${filePath} uploaded`);
+                console.log(`${self.name}: ${filePath} uploaded`);
                 self.uploadMultiple(list, cb);
             });
         });
@@ -175,7 +176,7 @@ Sftp.prototype.eachIn = function(filePath, fileFunc, cb) {
     let self = this;
 
     this.do(function () {
-        self.sftp.readdir(filePath, function(err, list) {
+        self.sftp.readdir(filePath || '/', function(err, list) {
             if (err) throw err;
 
             self.eachEntry(filePath, list, fileFunc, cb);
@@ -225,7 +226,7 @@ Sftp.prototype.delete = function(filePath, cb) {
         self.sftp.unlink(remotePath, function(err) {
             if (err) throw err;
 
-            console.log(`${filePath} deleted from server`);
+            console.log(`${self.name}: ${filePath} deleted from server`);
             self.deleteDirFor(remotePath, cb);
         });
     });
@@ -247,7 +248,7 @@ Sftp.prototype.deleteMultiple = function(list, cb) {
         self.sftp.unlink(remotePath, function(err) {
             if (err) throw err;
 
-            console.log(`${filePath} deleted from server`);
+            console.log(`${self.name}: ${filePath} deleted from server`);
             self.deleteDirFor(remotePath, function() {
                 self.deleteMultiple(list, cb);
             });
@@ -297,7 +298,7 @@ Sftp.prototype.download = function(filePath, cb) {
             self.sftp.fastGet(remotePath, localPath, function (err) {
                 if (err) throw err;
 
-                console.log(`${filePath} downloaded`);
+                console.log(`${self.name}: ${filePath} downloaded`);
                 cb();
             });
         });
@@ -338,7 +339,7 @@ Sftp.prototype.deleteLocally = function() {
         fs.unlink(localPath, function(err) {
             if (err) throw err;
 
-            console.log(`${file.relative.replace(/\\/g, '/')} deleted locally`);
+            console.log(`${self.name}: ${file.relative.replace(/\\/g, '/')} deleted locally`);
             self.deleteLocalDirFor(localPath, cb);
 
         });

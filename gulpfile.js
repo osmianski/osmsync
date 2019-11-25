@@ -1,5 +1,5 @@
 const fs = require('fs');
-const {src, series, watch} = require('gulp');
+const {src, series, watch, parallel} = require('gulp');
 
 const FileList = require('./js/FileList');
 const Sftp = require('./js/Sftp');
@@ -13,16 +13,20 @@ In 'config.json' file, specify at least one "mapping" - pair of local and remote
 
 {
   "mapping1": {
-    "local_path": "directory on your computer, can be relative to '${process.cwd()}' directory", 
-    "remote_path": "directory on remote server", 
-    // also provide SFTP connection settings for accessing remote server
+    "localPath": "directory on your computer, can be relative to '${process.cwd()}' directory", 
+    "remotePath": "directory on remote server", 
+    "remote": {
+      // also provide SFTP connection settings for accessing remote server
+    }    
   },
   
   // ...  
   "mappingN": { 
-    "local_path": "directory on your computer, can be relative to '${process.cwd()}' directory", 
-    "remote_path": "directory on remote server", 
-    // also provide SFTP connection settings for accessing remote server
+    "localPath": "directory on your computer, can be relative to '${process.cwd()}' directory", 
+    "remotePath": "directory on remote server", 
+    "remote": {
+      // also provide SFTP connection settings for accessing remote server
+    }    
   },
 }
 
@@ -38,11 +42,11 @@ password - SFTP password. If omitted, your private SSH key will be used to conne
 const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 
 exports.default = function (cb) {
-    console.log(`Syntax: 
+    console.log(`Usage: 
 
 gulp command[:mapping]
 
-If mapping is omitted, mapping with "default" name is assumed.
+If mapping is omitted, command runs on all mappings.
 
 Available commands:
 
@@ -58,16 +62,14 @@ for (let mapping in config) {
         continue;
     }
 
-    let suffix = mapping != 'default' ? `:${mapping}` : '';
-
-    exports[`pull${suffix}`] = createPullTask(mapping, config[mapping]);
-    exports[`push${suffix}`] = createPushTask(mapping, config[mapping]);
-    exports[`watch${suffix}`] = createWatchTask(mapping, config[mapping]);
+    exports[`pull:${mapping}`] = createPullTask(mapping, config[mapping]);
+    exports[`push:${mapping}`] = createPushTask(mapping, config[mapping]);
+    exports[`watch:${mapping}`] = createWatchTask(mapping, config[mapping]);
 }
 
 function createPullTask(mapping, mapping_) {
     let fileList = new FileList();
-    let sftp = new Sftp(mapping_);
+    let sftp = new Sftp(mapping, mapping_);
 
     return series(function downloadNewAndModifiedFilesFromRemoteServer(cb) {
         sftp.each(function (filePath, cb) {
@@ -89,7 +91,7 @@ function createPullTask(mapping, mapping_) {
 
 function createPushTask(mapping, mapping_) {
     let fileList  = new FileList();
-    let sftp = new Sftp(mapping_);
+    let sftp = new Sftp(mapping, mapping_);
 
     return series(function uploadNewAndModifiedFilesToRemoteServer() {
         return src('**/*', {base: mapping_.localPath, cwd: mapping_.localPath})
@@ -112,7 +114,7 @@ function createPushTask(mapping, mapping_) {
 function createWatchTask(mapping, mapping_) {
     let changes = [];
     let deletions = [];
-    let sftp = new Sftp(mapping_);
+    let sftp = new Sftp(mapping, mapping_);
 
     return function () {
         let watcher = watch('**/*', {base: mapping_.localPath, cwd: mapping_.localPath},
@@ -160,3 +162,21 @@ function createWatchTask(mapping, mapping_) {
         watcher.on('unlink', unlink);
     };
 }
+
+function all(operation) {
+    let tasks = [];
+
+    for (let mapping in config) {
+        if (!config.hasOwnProperty(mapping)) {
+            continue;
+        }
+
+        tasks.push(exports[`${operation}:${mapping}`]);
+    }
+
+    return parallel(...tasks);
+}
+
+exports.pull = all('pull');
+exports.push = all('push');
+exports.watch = all('watch');

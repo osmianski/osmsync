@@ -1,5 +1,16 @@
 {
-  "name": "osm-sftp",
+  "name": "osmsync",
+  "version": "1.0.1",
+  "description": "gulp push - syncs local directory to remote server, gulp pull - syncs remote server directory to this computer, gulp watch - tracks and uploads local changes and deletions",
+  "author": {
+    "name": "Vladislav Osmianskij",
+    "email": "vlaosm@gmail.com"
+  },
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/osmianski/osm-sftp-sync.git"
+  },
   "dependencies": {
     "gulp": "^4.0.2",
     "through2": "^3.0.1",
