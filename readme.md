@@ -20,7 +20,7 @@ Before using this project create `config.json` file in `{project_path}` director
 
 In `config.json` file, define one or more **mappings**. Mapping is a pair of local and remote directory to be synced.
 
-In the following example, `config.json` contains 2 mappings, one uses authenticates to server using a password, the other one uses private key in your home directory:
+In the following example, `config.json` contains 2 mappings, one authenticates to server using a password, the other one uses private key in your home directory:
 
     {
         "default": {
