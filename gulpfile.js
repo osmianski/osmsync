@@ -1,5 +1,5 @@
 const fs = require('fs');
-const {src, series} = require('gulp');
+const {src, series, watch} = require('gulp');
 
 const FileList = require('./js/FileList');
 const Sftp = require('./js/Sftp');
@@ -110,6 +110,53 @@ function createPushTask(mapping, mapping_) {
 }
 
 function createWatchTask(mapping, mapping_) {
+    let changes = [];
+    let deletions = [];
+    let sftp = new Sftp(mapping_);
+
     return function () {
+        let watcher = watch('**/*', {base: mapping_.localPath, cwd: mapping_.localPath},
+            function sendWatchedChangesAndDeletionsToServer(cb)
+        {
+            let changes_ = changes;
+            let deletions_ = deletions;
+
+            changes = [];
+            deletions = [];
+
+            sftp.uploadMultiple(changes_, function() {
+                sftp.deleteMultiple(deletions_, cb);
+            });
+        });
+
+        function change(path) {
+            path = path.replace(/\\/g, '/');
+
+            if (changes.indexOf(path) == -1) {
+                changes.push(path);
+            }
+
+            let index = deletions.indexOf(path);
+            if (index != -1) {
+                deletions.splice(index, 1);
+            }
+        }
+
+        function unlink(path) {
+            path = path.replace(/\\/g, '/');
+
+            if (deletions.indexOf(path) == -1) {
+                deletions.push(path);
+            }
+
+            let index = changes.indexOf(path);
+            if (index != -1) {
+                changes.splice(index, 1);
+            }
+        }
+
+        watcher.on('change', change);
+        watcher.on('add', change);
+        watcher.on('unlink', unlink);
     };
 }

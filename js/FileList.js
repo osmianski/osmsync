@@ -19,7 +19,7 @@ FileList.prototype.notIn = function () {
     let self = this;
     return through.obj(function (file, enc, cb) {
         if (file.isBuffer() &&
-            self.paths.indexOf(file.relative.replace(/\\/g, '/') == -1))
+            self.paths.indexOf(file.relative.replace(/\\/g, '/')) == -1)
         {
             this.push(file);
         }

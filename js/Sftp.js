@@ -114,6 +114,32 @@ Sftp.prototype.upload = function () {
     });
 };
 
+Sftp.prototype.uploadMultiple = function(list, cb) {
+    let self = this;
+
+    if (!list.length) {
+        cb();
+        return;
+    }
+
+    let filePath = list.shift();
+
+    self.do(function () {
+        let localPath = path.join(self.getLocalPath(), filePath);
+        let remotePath = `${self.getRemotePath()}/${filePath}`;
+
+        self.createDirFor(remotePath, function (err) {
+            if (err) throw err;
+
+            self.sftp.fastPut(localPath, remotePath, function (err) {
+                if (err) throw err;
+                console.log(`${filePath} uploaded`);
+                self.uploadMultiple(list, cb);
+            });
+        });
+    });
+};
+
 Sftp.prototype.createDirFor = function(filePath, cb) {
     let self = this;
 
@@ -201,6 +227,30 @@ Sftp.prototype.delete = function(filePath, cb) {
 
             console.log(`${filePath} deleted from server`);
             self.deleteDirFor(remotePath, cb);
+        });
+    });
+};
+
+Sftp.prototype.deleteMultiple = function(list, cb) {
+    let self = this;
+
+    if (!list.length) {
+        cb();
+        return;
+    }
+
+    let filePath = list.shift();
+
+    self.do(function () {
+        let remotePath = `${self.getRemotePath()}/${filePath}`;
+
+        self.sftp.unlink(remotePath, function(err) {
+            if (err) throw err;
+
+            console.log(`${filePath} deleted from server`);
+            self.deleteDirFor(remotePath, function() {
+                self.deleteMultiple(list, cb);
+            });
         });
     });
 };
