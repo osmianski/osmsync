@@ -1,6 +1,4 @@
-# `osm-sftp-sync`
-
-This software seamlessly syncs directories on your local computer and on remote servers via SFTP.
+This project syncs entire local directory to remote server and vice versa or watches and uploads local changes and deletions on the fly.
 
 ## Installation
 
