@@ -1,6 +1,8 @@
 {
-  "name": "osmdocs-gulp",
+  "name": "osm-sftp",
   "dependencies": {
-    "gulp": "^4.0.2"
+    "gulp": "^4.0.2",
+    "through2": "^3.0.1",
+    "ssh2": "^0.8.6"
   }
 }

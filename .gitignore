@@ -1,6 +1,8 @@
 *
-!.gitignore
-!gulpfile.js
-!LICENSE
-!package.json
-!readme.md
+!/.gitignore
+!/config.template.json
+!/gulpfile.js
+!/LICENSE
+!/package.json
+!/readme.md
+!/js/

@@ -1,0 +1,11 @@
+{
+  "default": {
+    "localPath": "files",
+    "remotePath": "{remotePath}",
+    "remote": {
+      "host": "{host}",
+      "username": "{username}",
+      "password": "{password}"
+    }
+  }
+}
