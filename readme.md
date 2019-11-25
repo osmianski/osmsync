@@ -108,7 +108,7 @@ On Linux, once configuration is stable and SFTP connections work, consider runni
 
         apt-get install supervisor
         
-2. With `root` user, create `/etc/supervisor/conf.d/osmsync.conf` file with the following contents:
+2. With `root` user, create `/etc/supervisor/conf.d/osmsync.conf` file with the following contents (replace `{project_path}` and `{user}`):
 
         [program:osmsync]
         process_name=%(program_name)s_%(process_num)02d
