@@ -21,7 +21,7 @@ This project syncs entire local directory to remote server and vice versa or wat
 >     cd osmsync
 >     npm install
 >
-> in this case, `{project_path} = {parent_directory}/osmsync`.
+> In this case, `{project_path} = {parent_directory}/osmsync`.
 
 ## Configuration
 
