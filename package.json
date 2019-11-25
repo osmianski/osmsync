@@ -1,6 +1,6 @@
 {
   "name": "osmsync",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Syncs entire local directory to remote server and vice versa or watches and uploads local changes and deletions on the fly",
   "author": {
     "name": "Vladislav Osmianskij",

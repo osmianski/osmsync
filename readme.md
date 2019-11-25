@@ -72,3 +72,48 @@ Or you can run the same commands for all mappings as follows:
         
     // watch and upload local changes for all mappings 
     gulp watch
+
+## Installing As A Windows Service
+
+On Windows, once configuration is stable and SFTP connections work, consider installing `gulp watch` as a service, so that you don't have to start it in console window:
+
+1. Download [nssm](https://nssm.cc/download), and copy `win64/nssm.exe` from downloaded ZIP file to `C:\Windows` directory.
+
+2. In shell, run the following commands with administrative privileges:
+
+        nssm install osmsync "%USERPROFILE%\AppData\Roaming\npm\gulp.cmd" watch
+        nssm set osmsync AppDirectory {project_path}
+        nssm start osmsync 
+        
+3. Later, if needed, stop/restart/start the service, either from Windows `Services` applet or by running commands with administrative privileges:
+
+        nssm stop osmsync
+        nssm restart osmsync
+        nssm start osmsync
+        
+## Running In Background In Linux
+
+On Linux, once configuration is stable and SFTP connections work, consider installing `gulp watch` as a service, so that you don't have to start it in console window:
+                
+1. Install [Supervisor](http://supervisord.org/). On Ubuntu run in shell with `root` user:
+
+        apt-get install supervisor
+        
+2. With `root` user, create `/etc/supervisor/conf.d/osmsync.conf` file with the following contents:
+
+        [program:osmsync]
+        process_name=%(program_name)s_%(process_num)02d
+        directory={project_path}
+        command=gulp watch
+        autostart=true
+        autorestart=true
+        user={user}
+        numprocs=1
+        redirect_stderr=true
+        stdout_logfile=/var/log/supervisor/%(program_name)s.log          
+        
+3. Start Supervisor in shell with `root` user:                     
+
+        supervisorctl reread
+        supervisorctl update
+        supervisorctl start osmsync:*
