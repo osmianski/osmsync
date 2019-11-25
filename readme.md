@@ -14,6 +14,15 @@ This project syncs entire local directory to remote server and vice versa or wat
         cd {project_path}
         npm install
 
+> **Note.** Alternatively to steps 3 and 4, clone this project in shell (install [Git](https://git-scm.com/) if you don't have it yet):
+> 
+>     cd {parent_directory}
+>     git clone https://github.com/osmianski/osmsync.git
+>     cd osmsync
+>     npm install
+>
+> in this case, `{project_path} = {parent_directory}/osmsync`.
+
 ## Configuration
 
 Before using this project create `config.json` file in `{project_path}` directory. You can use `config.template.json` as a template.
