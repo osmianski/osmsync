@@ -1,7 +1,7 @@
 {
   "name": "osmsync",
   "version": "1.0.1",
-  "description": "gulp push - syncs local directory to remote server, gulp pull - syncs remote server directory to this computer, gulp watch - tracks and uploads local changes and deletions",
+  "description": "Full syncs local directory to remote server and vice versa, watches and uploads local changes and deletions",
   "author": {
     "name": "Vladislav Osmianskij",
     "email": "vlaosm@gmail.com"
