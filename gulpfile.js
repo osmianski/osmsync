@@ -66,9 +66,25 @@ for (let mapping in config) {
 }
 
 function createPullTask(mapping, mapping_) {
-    return function (cb) {
-        cb();
-    };
+    let fileList = new FileList();
+    let sftp = new Sftp(mapping_);
+
+    return series(function downloadNewAndModifiedFilesFromRemoteServer(cb) {
+        sftp.each(function (filePath, cb) {
+            sftp.download(filePath, function(err) {
+                if (err) throw err;
+
+                fileList.paths.push(filePath);
+                cb();
+            });
+        }, cb);
+    }, function deleteOldFilesLocally() {
+        return src('**/*', {base: mapping_.localPath, cwd: mapping_.localPath})
+            .pipe(fileList.notIn())
+            .pipe(sftp.deleteLocally());
+    }, function closeSftpSession(cb) {
+        sftp.close(cb);
+    });
 }
 
 function createPushTask(mapping, mapping_) {
