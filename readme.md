@@ -1,6 +1,6 @@
 This project syncs entire local directory to remote server and vice versa or watches and uploads local changes and deletions on the fly.
 
-## Installation
+## Installation {#installation}
 
 1. Install [Node.js](https://nodejs.org/en/). Download installer and follow its instructions. 
 2. Install [gulp.js](https://gulpjs.com/). Run the following command in shell:
@@ -23,7 +23,7 @@ This project syncs entire local directory to remote server and vice versa or wat
 >
 > In this case, `{project_path} = {parent_directory}/osmsync`.
 
-## Configuration
+## Configuration {#configuration}
 
 Before using this project create `config.json` file in `{project_path}` directory. You can use `config.template.json` as a template.
 
@@ -51,7 +51,7 @@ In the following example, `config.json` contains 2 mappings, one authenticates t
         },        
     }  
     
-## Usage
+## Usage {#usage}
 
 After configuring mappings, use the following commands in shell by specifying mapping name after a colon, in this example, `production`:
 
@@ -82,7 +82,7 @@ Or you can run the same commands for all mappings as follows:
     // watch and upload local changes for all mappings 
     gulp watch
 
-## Installing As A Windows Service
+## Installing As A Windows Service {#installing-as-a-windows-service}
 
 On Windows, once configuration is stable and SFTP connections work, consider installing `gulp watch` as a service, so that you don't have to start it in console window:
 
@@ -100,7 +100,7 @@ On Windows, once configuration is stable and SFTP connections work, consider ins
         nssm restart osmsync
         nssm start osmsync
         
-## Running In Background In Linux
+## Running In Background In Linux {#running-in-background-in-linux}
 
 On Linux, once configuration is stable and SFTP connections work, consider running `gulp watch` in background, so that you don't have to start it in console window:
                 
