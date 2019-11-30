@@ -50,7 +50,24 @@ In the following example, `config.json` contains 2 mappings, one authenticates t
             }    
         },        
     }  
-    
+
+In addition to mappings, you can configure OsmSync in `options` section:
+
+    {
+		...
+		"options": {
+			notify: "all"
+		}
+    }  
+
+All options:
+
+* `notify`: show popup notifications while OsmSync is watching local files for changes. Possible values:
+	* `all`: show a notification after any upload, delete or error
+	* `error`: show a notification after errors only
+	* if omitted, notifications are not shown 
+
+     
 ## Usage
 
 After configuring mappings, use the following commands in shell by specifying mapping name after a colon, in this example, `production`:
@@ -90,7 +107,7 @@ On Windows, once configuration is stable and SFTP connections work, consider ins
 
 2. In shell, run the following commands with administrative privileges:
 
-        nssm install osmsync "%USERPROFILE%\AppData\Roaming\npm\gulp.cmd" watch
+        nssm install osmsync "%USERPROFILE%\AppData\Roaming\npm\gulp.cmd" "watch > %USERPROFILE%\osmsync.log" 2>&1" 
         nssm set osmsync AppDirectory {project_path}
         nssm start osmsync 
         
@@ -99,7 +116,20 @@ On Windows, once configuration is stable and SFTP connections work, consider ins
         nssm stop osmsync
         nssm restart osmsync
         nssm start osmsync
-        
+
+4. Check `C:\Users\{user}\osmsync.log` to see sync history.
+
+> **Note**. `options.notify` setting in `config.json` has no effect if you run OsmSync as a Windows service. You can enable notifications from Windows service by running it with your Windows user account:
+> 
+> 1. Run in shell:
+> 
+>         nssm edit osmsync
+>         
+> 2. Set `This account` in `Logon` tab, enter your Windows user and password (2 times) and press `Edit service` button.
+> 3. Restart the service in shell:  
+> 
+>         nssm restart osmsync
+
 ## Running In Background In Linux
 
 On Linux, once configuration is stable and SFTP connections work, consider running `gulp watch` in background, so that you don't have to start it in console window:
@@ -126,3 +156,6 @@ On Linux, once configuration is stable and SFTP connections work, consider runni
         supervisorctl reread
         supervisorctl update
         supervisorctl start osmsync:*
+
+4. Check `/var/log/supervisor/osmsync.log` to see sync history.
+

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const {src, series, watch, parallel} = require('gulp');
+const notifier = require('node-notifier');
 
 const FileList = require('./js/FileList');
 const Sftp = require('./js/Sftp');
@@ -61,6 +62,9 @@ for (let mapping in config) {
     if (!config.hasOwnProperty(mapping)) {
         continue;
     }
+    if (mapping == 'options') {
+        continue;
+    }
 
     exports[`pull:${mapping}`] = createPullTask(mapping, config[mapping]);
     exports[`push:${mapping}`] = createPushTask(mapping, config[mapping]);
@@ -117,17 +121,37 @@ function createWatchTask(mapping, mapping_) {
     let sftp = new Sftp(mapping, mapping_);
 
     return function () {
-        let watcher = watch('**/*', {base: mapping_.localPath, cwd: mapping_.localPath},
+        let watcher = watch('**/*', {
+            base: mapping_.localPath,
+            cwd: mapping_.localPath,
+            events: ['add', 'change', 'unlink', 'unlinkDir']
+        },
             function sendWatchedChangesAndDeletionsToServer(cb)
         {
             let changes_ = changes;
             let deletions_ = deletions;
 
+            let message = [];
+            if (changes_.length) {
+                message.push(`${changes_.length} file(s) uploaded`);
+            }
+            if (deletions_.length) {
+                message.push(`${deletions_.length} file(s) deleted`);
+            }
+
             changes = [];
             deletions = [];
 
             sftp.uploadMultiple(changes_, function() {
-                sftp.deleteMultiple(deletions_, cb);
+                sftp.deleteMultiple(deletions_, function() {
+                    if (config.options && config.options.notify == 'all' && message.length) {
+                        notifier.notify({
+                            title: 'OsmSync',
+                            message: message.join(', ')
+                        });
+                    }
+                    cb();
+                });
             });
         });
 
@@ -160,6 +184,12 @@ function createWatchTask(mapping, mapping_) {
         watcher.on('change', change);
         watcher.on('add', change);
         watcher.on('unlink', unlink);
+        watcher.on('error', function(error) {
+            if (error instanceof Error && error.code == 'EPERM' && error.syscall == 'watch') {
+                return;
+            }
+            console.log(error);
+        });
     };
 }
 
@@ -168,6 +198,10 @@ function all(operation) {
 
     for (let mapping in config) {
         if (!config.hasOwnProperty(mapping)) {
+            continue;
+        }
+
+        if (mapping == 'options') {
             continue;
         }
 
