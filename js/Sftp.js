@@ -6,6 +6,7 @@ const { Client } = require('ssh2');
 function Sftp(name, mapping) {
     this.name = name;
     this.mapping = mapping;
+    this.skips = 0;
     this.changes = 0;
     this.deletions = 0;
 }
@@ -269,6 +270,7 @@ Sftp.prototype.put = function(filePath, localStat, cb) {
         self.stat(filePath, localStat, undefined, function(localStat, remoteStat) {
             let mtime = self.newer(localStat, remoteStat);
             if (!mtime) {
+                self.skips++;
                 cb();
                 return;
             }
@@ -302,6 +304,7 @@ Sftp.prototype.download = function(filePath, remoteStat, cb) {
         self.stat(filePath, undefined, remoteStat, function(localStat, remoteStat) {
             let mtime = self.newer(remoteStat, localStat);
             if (!mtime) {
+                self.skips++;
                 cb();
                 return;
             }

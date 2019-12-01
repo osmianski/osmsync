@@ -71,6 +71,36 @@ for (let mapping in config) {
     exports[`watch:${mapping}`] = createWatchTask(mapping, config[mapping]);
 }
 
+function notifyAfterSuccessfully(operation, mapping, sftp, cb) {
+    let message = [];
+    if (sftp.changes) {
+        message.push(`${sftp.changes} file(s) ${operation}`);
+    }
+    if (sftp.deletions) {
+        message.push(`${sftp.deletions} file(s) deleted`);
+    }
+
+    let logMessage = message.slice(0);
+    if (sftp.skips) {
+        if (message.length) {
+            message.push(`${sftp.skips} file(s) skipped`);
+        }
+        logMessage.push(`${sftp.skips} file(s) skipped`);
+    }
+    if (logMessage.length) {
+        console.log(`${logMessage}: ${logMessage.join(', ')}`);
+    }
+
+    if (config.options && config.options.notify == 'all' && message.length) {
+        notifier.notify({
+            title: 'OsmSync',
+            message: `${mapping}: ${message.join(', ')}`
+        });
+    }
+
+    cb();
+}
+
 function createPullTask(mapping, mapping_) {
     let fileList = new FileList();
     let sftp = new Sftp(mapping, mapping_);
@@ -91,22 +121,7 @@ function createPullTask(mapping, mapping_) {
     }, function closeSftpSession(cb) {
         sftp.close(cb);
     }, function notify(cb) {
-        let message = [];
-        if (sftp.changes) {
-            message.push(`${sftp.changes} file(s) downloaded`);
-        }
-        if (sftp.deletions) {
-            message.push(`${sftp.deletions} file(s) deleted`);
-        }
-
-        if (config.options && config.options.notify == 'all' && message.length) {
-            notifier.notify({
-                title: 'OsmSync',
-                message: message.join(', ')
-            });
-        }
-
-        cb();
+        notifyAfterSuccessfully('downloaded', mapping, sftp, cb);
     });
 }
 
@@ -130,22 +145,7 @@ function createPushTask(mapping, mapping_) {
     }, function closeSftpSession(cb) {
         sftp.close(cb);
     }, function notify(cb) {
-        let message = [];
-        if (sftp.changes) {
-            message.push(`${sftp.changes} file(s) uploaded`);
-        }
-        if (sftp.deletions) {
-            message.push(`${sftp.deletions} file(s) deleted`);
-        }
-
-        if (config.options && config.options.notify == 'all' && message.length) {
-            notifier.notify({
-                title: 'OsmSync',
-                message: message.join(', ')
-            });
-        }
-
-        cb();
+        notifyAfterSuccessfully('uploaded', mapping, sftp, cb);
     });
 }
 
