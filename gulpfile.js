@@ -76,8 +76,8 @@ function createPullTask(mapping, mapping_) {
     let sftp = new Sftp(mapping, mapping_);
 
     return series(function downloadNewAndModifiedFilesFromRemoteServer(cb) {
-        sftp.each(function (filePath, cb) {
-            sftp.download(filePath, function(err) {
+        sftp.each(function (filePath, remoteStat, cb) {
+            sftp.download(filePath, remoteStat, function(err) {
                 if (err) throw err;
 
                 fileList.paths.push(filePath);
@@ -90,6 +90,23 @@ function createPullTask(mapping, mapping_) {
             .pipe(sftp.deleteLocally());
     }, function closeSftpSession(cb) {
         sftp.close(cb);
+    }, function notify(cb) {
+        let message = [];
+        if (sftp.changes) {
+            message.push(`${sftp.changes} file(s) downloaded`);
+        }
+        if (sftp.deletions) {
+            message.push(`${sftp.deletions} file(s) deleted`);
+        }
+
+        if (config.options && config.options.notify == 'all' && message.length) {
+            notifier.notify({
+                title: 'OsmSync',
+                message: message.join(', ')
+            });
+        }
+
+        cb();
     });
 }
 
@@ -102,7 +119,7 @@ function createPushTask(mapping, mapping_) {
             .pipe(fileList.add())
             .pipe(sftp.upload());
     }, function deleteOldFilesOnRemoteServer(cb) {
-        sftp.each(function(filePath, cb) {
+        sftp.each(function(filePath, remoteStat, cb) {
             if (fileList.paths.indexOf(filePath) == -1) {
                 sftp.delete(filePath, cb);
             }
@@ -112,6 +129,23 @@ function createPushTask(mapping, mapping_) {
         }, cb);
     }, function closeSftpSession(cb) {
         sftp.close(cb);
+    }, function notify(cb) {
+        let message = [];
+        if (sftp.changes) {
+            message.push(`${sftp.changes} file(s) uploaded`);
+        }
+        if (sftp.deletions) {
+            message.push(`${sftp.deletions} file(s) deleted`);
+        }
+
+        if (config.options && config.options.notify == 'all' && message.length) {
+            notifier.notify({
+                title: 'OsmSync',
+                message: message.join(', ')
+            });
+        }
+
+        cb();
     });
 }
 

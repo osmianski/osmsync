@@ -6,6 +6,8 @@ const { Client } = require('ssh2');
 function Sftp(name, mapping) {
     this.name = name;
     this.mapping = mapping;
+    this.changes = 0;
+    this.deletions = 0;
 }
 
 Sftp.prototype.getLocalPath = function() {
@@ -97,21 +99,7 @@ Sftp.prototype.upload = function () {
             return cb();
         }
 
-        self.do(function() {
-            let filePath = file.relative.replace(/\\/g, '/');
-            let remotePath = `${self.getRemotePath()}/${filePath}`;
-
-            self.createDirFor(remotePath, function(err) {
-                if (err) throw err;
-
-                self.sftp.fastPut(file.path, remotePath, function (err) {
-                    if (err) throw err;
-                    console.log(`${self.name}: ${filePath} uploaded`);
-                    cb();
-                });
-            });
-
-        });
+        self.put(file.relative.replace(/\\/g, '/'), file.stat, cb);
     });
 };
 
@@ -123,21 +111,8 @@ Sftp.prototype.uploadMultiple = function(list, cb) {
         return;
     }
 
-    let filePath = list.shift();
-
-    self.do(function () {
-        let localPath = path.join(self.getLocalPath(), filePath);
-        let remotePath = `${self.getRemotePath()}/${filePath}`;
-
-        self.createDirFor(remotePath, function (err) {
-            if (err) throw err;
-
-            self.sftp.fastPut(localPath, remotePath, function (err) {
-                if (err) throw err;
-                console.log(`${self.name}: ${filePath} uploaded`);
-                self.uploadMultiple(list, cb);
-            });
-        });
+    self.put(list.shift(), undefined, function() {
+        self.uploadMultiple(list, cb);
     });
 };
 
@@ -208,7 +183,7 @@ Sftp.prototype.eachEntry = function (dirPath, list, fileFunc, cb) {
         });
     }
     else if (fileInfo.attrs.isFile()) {
-        fileFunc(filePath.substr(remotePath.length + 1), function() {
+        fileFunc(filePath.substr(remotePath.length + 1), fileInfo.attrs, function() {
             self.eachEntry(dirPath, list, fileFunc, cb);
         });
     }
@@ -227,6 +202,7 @@ Sftp.prototype.delete = function(filePath, cb) {
             if (err) throw err;
 
             console.log(`${self.name}: ${filePath} deleted from server`);
+            self.deletions++;
             self.deleteDirFor(remotePath, cb);
         });
     });
@@ -249,6 +225,7 @@ Sftp.prototype.deleteMultiple = function(list, cb) {
             if (err) throw err;
 
             console.log(`${self.name}: ${filePath} deleted from server`);
+            self.deletions++;
             self.deleteDirFor(remotePath, function() {
                 self.deleteMultiple(list, cb);
             });
@@ -285,24 +262,108 @@ Sftp.prototype.deleteDirFor = function(filePath, cb) {
     });
 };
 
-Sftp.prototype.download = function(filePath, cb) {
+Sftp.prototype.put = function(filePath, localStat, cb) {
     let self = this;
 
-    this.do(function () {
-        let remotePath = `${self.getRemotePath()}/${filePath}`;
-        let localPath = path.join(self.getLocalPath(), filePath);
+    self.do(function() {
+        self.stat(filePath, localStat, undefined, function(localStat, remoteStat) {
+            let mtime = self.newer(localStat, remoteStat);
+            if (!mtime) {
+                cb();
+                return;
+            }
 
-        self.createLocalDirFor(localPath, function(err) {
-            if (err) throw err;
+            let remotePath = `${self.getRemotePath()}/${filePath}`;
+            let localPath = path.join(self.getLocalPath(), filePath);
 
-            self.sftp.fastGet(remotePath, localPath, function (err) {
+            self.createDirFor(remotePath, function(err) {
                 if (err) throw err;
 
-                console.log(`${self.name}: ${filePath} downloaded`);
-                cb();
+                self.sftp.fastPut(localPath, remotePath, function (err) {
+                    if (err) throw err;
+
+                    self.sftp.utimes(remotePath, mtime, mtime, function (err) {
+                        if (err) throw err;
+
+                        console.log(`${self.name}: ${filePath} uploaded`);
+                        self.changes++;
+                        cb();
+                    });
+                });
             });
         });
     });
+};
+
+Sftp.prototype.download = function(filePath, remoteStat, cb) {
+    let self = this;
+
+    this.do(function () {
+        self.stat(filePath, undefined, remoteStat, function(localStat, remoteStat) {
+            let mtime = self.newer(remoteStat, localStat);
+            if (!mtime) {
+                cb();
+                return;
+            }
+
+            let remotePath = `${self.getRemotePath()}/${filePath}`;
+            let localPath = path.join(self.getLocalPath(), filePath);
+
+            self.createLocalDirFor(localPath, function(err) {
+                if (err) throw err;
+
+                self.sftp.fastGet(remotePath, localPath, function (err) {
+                    if (err) throw err;
+
+                    fs.utimes(localPath, mtime, mtime, function(err) {
+                        if (err) throw err;
+                        console.log(`${self.name}: ${filePath} downloaded`);
+                        self.changes++;
+                        cb();
+                    });
+                });
+            });
+        });
+    });
+};
+
+Sftp.prototype.stat = function(filePath, localStat, remoteStat, cb) {
+    let self = this;
+    let remotePath = `${self.getRemotePath()}/${filePath}`;
+    let localPath = path.join(self.getLocalPath(), filePath);
+
+    if (localStat === undefined) {
+        fs.stat(localPath, function(err, localStat) {
+            self.stat(filePath, localStat || null, remoteStat, cb);
+        });
+
+        return;
+    }
+
+    if (remoteStat === undefined) {
+        self.sftp.stat(remotePath, function (err, remoteStat) {
+            cb(localStat, remoteStat || null);
+        });
+
+        return;
+    }
+
+    cb(localStat, remoteStat);
+};
+
+Sftp.prototype.newer = function(source, target) {
+    if (!source) {
+        return false;
+    }
+
+    let sourceTime = Math.round(source.mtimeMs / 1000.0 || source.mtime);
+    if (!target) {
+        return sourceTime;
+    }
+
+    let targetTime = Math.round(target.mtimeMs / 1000.0 || target.mtime);
+
+    return sourceTime > targetTime ? sourceTime : false;
 };
 
 Sftp.prototype.createLocalDirFor = function(filePath, cb) {
@@ -340,6 +401,7 @@ Sftp.prototype.deleteLocally = function() {
             if (err) throw err;
 
             console.log(`${self.name}: ${file.relative.replace(/\\/g, '/')} deleted locally`);
+            self.deletions++;
             self.deleteLocalDirFor(localPath, cb);
 
         });
