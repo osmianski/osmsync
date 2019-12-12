@@ -88,7 +88,7 @@ function notifyAfterSuccessfully(operation, mapping, sftp, cb) {
         logMessage.push(`${sftp.skips} file(s) skipped`);
     }
     if (logMessage.length) {
-        console.log(`${logMessage}: ${logMessage.join(', ')}`);
+        console.log(`${mapping}: ${logMessage.join(', ')}`);
     }
 
     if (config.options && config.options.notify == 'all' && message.length) {

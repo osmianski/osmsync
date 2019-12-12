@@ -107,7 +107,7 @@ On Windows, once configuration is stable and SFTP connections work, consider ins
 
 2. In shell, run the following commands with administrative privileges:
 
-        nssm install osmsync "%USERPROFILE%\AppData\Roaming\npm\gulp.cmd" "watch > %USERPROFILE%\osmsync.log" 2>&1" 
+        nssm install osmsync "%USERPROFILE%\AppData\Roaming\npm\gulp.cmd" "watch >> %USERPROFILE%\osmsync.log" 2>&1" 
         nssm set osmsync AppDirectory {project_path}
         nssm start osmsync 
         
